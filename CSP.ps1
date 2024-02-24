@@ -5,6 +5,30 @@ trap {
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 }
 
+# Functie om het camerarolpad in te stellen
+function Set-CameraRollPath {
+    param (
+        [string]$newPath
+    )
+
+    # Instellen van het nieuwe camerarolpad
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{AB5FB87B-7CE2-4F83-915D-550846C9537B}" -Value $newPath
+
+    # Vernieuw de shell
+    $null = (New-Object -ComObject Shell.Application).NameSpace(0).Self.InvokeVerb("Ref&resh")
+}
+
+# Nieuw pad voor de camerarol (verander dit naar jouw gewenste locatie)
+$newCameraRollPath = "$env:userprofile\Pictures"
+
+# Controleer of het nieuwe pad bestaat, zo niet, maak het dan aan
+if (-not (Test-Path -Path $newCameraRollPath)) {
+    New-Item -ItemType Directory -Path $newCameraRollPath
+}
+
+# Stel het nieuwe camerarolpad in
+Set-CameraRollPath -newPath $newCameraRollPath
+
 # Start de Camera app
 Start-Process "microsoft.windows.camera:" -WindowStyle Maximized -ErrorAction Stop
 
@@ -18,14 +42,14 @@ Add-Type -AssemblyName System.Windows.Forms
 # Wacht een paar seconden om de foto te nemen
 Start-Sleep -Seconds 5
 
-# BeÃ«indig de Camera app
+# Beëindig de Camera app
 Get-Process "WindowsCamera" | Stop-Process -Force
 
 # Wacht even om ervoor te zorgen dat de app correct wordt gesloten
 Start-Sleep -Seconds 2
 
 # Nieuwe Camera Roll-pad
-$cameraRollPath = "C:\Users\BOLE130709\Pictures\Camera Roll"
+$cameraRollPath = $newCameraRollPath
 
 # Zoek de nieuwste foto in de Camera Roll-map
 $latestPhoto = Get-ChildItem $cameraRollPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1
