@@ -19,7 +19,7 @@ function Set-CameraRollPath {
 }
 
 # Nieuw pad voor de camerarol (verander dit naar jouw gewenste locatie)
-$newCameraRollPath = "$env:userprofile\Pictures\Camera Roll"
+$newCameraRollPath = "$env:userprofile\Pictures\CameraRoll"
 
 # Controleer of het nieuwe pad bestaat, zo niet, maak het dan aan
 if (-not (Test-Path -Path $newCameraRollPath)) {
