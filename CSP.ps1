@@ -1,74 +1,74 @@
-# Trap ongevangen uitzonderingen om te voorkomen dat het script automatisch sluit
+# Trap unhandled exceptions to prevent the script from automatically closing
 trap {
-    Write-Host "Er is een fout opgetreden:`n$($_.Exception.Message)"
-    Write-Host "Druk op een toets om door te gaan..."
+    Write-Host "An error occurred:`n$($_.Exception.Message)"
+    Write-Host "Press any key to continue..."
     $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')
 }
 
-# Functie om het camerarolpad in te stellen
+# Function to set the camera roll path
 function Set-CameraRollPath {
     param (
         [string]$newPath
     )
 
-    # Instellen van het nieuwe camerarolpad
+    # Setting the new camera roll path
     Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" -Name "{AB5FB87B-7CE2-4F83-915D-550846C9537B}" -Value $newPath
 
-    # Vernieuw de shell
+    # Refresh the shell
     $null = (New-Object -ComObject Shell.Application).NameSpace(0).Self.InvokeVerb("Ref&resh")
 }
 
-# Nieuw pad voor de camerarol (verander dit naar jouw gewenste locatie)
+# New path for the camera roll (change this to your desired location)
 $newCameraRollPath = "$env:userprofile\Pictures\CameraRoll"
 
-# Controleer of het nieuwe pad bestaat, zo niet, maak het dan aan
+# Check if the new path exists, if not, create it
 if (-not (Test-Path -Path $newCameraRollPath)) {
     New-Item -ItemType Directory -Path $newCameraRollPath
 }
 
-# Stel het nieuwe camerarolpad in
+# Set the new camera roll path
 Set-CameraRollPath -newPath $newCameraRollPath
 
-# Start de Camera app
+# Start the Camera app
 Start-Process "microsoft.windows.camera:" -WindowStyle Maximized -ErrorAction Stop
 
-# Wacht een paar seconden om de Camera app te starten
+# Wait a few seconds to start the Camera app
 Start-Sleep -Seconds 5
 
-# Simuleer een toetsaanslag om een foto te maken
+# Simulate a keypress to take a photo
 Add-Type -AssemblyName System.Windows.Forms
 [System.Windows.Forms.SendKeys]::SendWait("{Enter}")
 
-# Wacht een paar seconden om de foto te nemen
+# Wait a few seconds to take the photo
 Start-Sleep -Seconds 5
 
-# Beëindig de Camera app
+# Close the Camera app
 Get-Process "WindowsCamera" | Stop-Process -Force
 
-# Wacht even om ervoor te zorgen dat de app correct wordt gesloten
+# Wait a bit to ensure the app closes properly
 Start-Sleep -Seconds 2
 
-# Nieuwe Camera Roll-pad
+# New Camera Roll path
 $cameraRollPath = $newCameraRollPath
 
-# Zoek de nieuwste foto in de Camera Roll-map
+# Find the latest photo in the Camera Roll folder
 $latestPhoto = Get-ChildItem $cameraRollPath | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
-# Als er geen foto wordt gevonden, meld een fout en stop het script
+# If no photo is found, report an error and stop the script
 if (-not $latestPhoto) {
-    throw "Kan geen foto vinden in de Camera Roll-map."
+    throw "Unable to find a photo in the Camera Roll folder."
 }
 
-# Definieer de map voor het opslaan van de foto (bureaublad)
+# Define the folder to save the photo (Desktop)
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 
-# Genereer een bestandsnaam voor de foto op het bureaublad
+# Generate a filename for the photo on the desktop
 $fileName = "photo_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".jpg"
 
-# Verplaats de foto naar het bureaublad
+# Move the photo to the desktop
 Move-Item $latestPhoto.FullName -Destination (Join-Path -Path $desktopPath -ChildPath $fileName) -Force -ErrorAction Stop
 
-# Script voor het instellen van de achtergrond
+# Script for setting the wallpaper
 $code = @'
 using System.Runtime.InteropServices; 
 namespace Win32 { 
@@ -84,14 +84,14 @@ namespace Win32 {
 }
 '@
 
-# Toevoegen van de .NET-type definitie
+# Add the .NET type definition
 Add-Type $code 
 
-# Pad voor de tijdelijke afbeelding die wordt gebruikt voor de achtergrond
+# Path for the temporary image used for the wallpaper
 $imagePath = "$env:TEMP\image.jpg"
 
-# Kopieer de foto naar de tijdelijke map
+# Copy the photo to the temporary folder
 Copy-Item (Join-Path -Path $desktopPath -ChildPath $fileName) -Destination $imagePath -Force -ErrorAction Stop
 
-# Instellen van de achtergrond met de foto
+# Set the wallpaper with the photo
 [Win32.Wallpaper]::SetWallpaper($imagePath)
